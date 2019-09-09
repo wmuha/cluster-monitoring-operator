@@ -15,6 +15,7 @@
 package e2e
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -82,5 +83,29 @@ func TestPrometheusVolumeClaim(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPrometheusAlertmanagerAntiAffinity(t *testing.T) {
+	pods, err := f.KubeClient.CoreV1().Pods(f.Ns).List(metav1.ListOptions{FieldSelector: "status.phase=Running"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//fmt.Printf("%T", pods)
+	//fmt.Printf("%v", pods)
+
+	for _, p := range pods.Items {
+		splitted := strings.Split(p.String(), "3: ")
+
+		t.Log((splitted))
+		t.Log(p.Name)
+
+		if p.Name == "alertmanager-main" && len(splitted) != 0 {
+			if strings.Contains(splitted[1], "podAntiffinity:") != true {
+				t.Fail()
+			}
+			t.Log(len(splitted))
+		}
 	}
 }
